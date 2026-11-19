@@ -145,7 +145,7 @@ export class MultiplayerRoom {
     return { code: s.code, status: s.status, players: s.players.map(({ publicId, name, role }) => ({ id: publicId, name, role })),
       isHost: viewerId === s.hostId,
       game: g ? { per: g.per, tsec: g.tsec, qi: g.qi, total: g.seq.length,
-        teams: g.teams.map(({ playerId, ...team }) => team), current, lastResult: g.reveal } : null,
+        teams: g.teams.map(({ playerId, ...team }) => team), current, lastResult: g.reveal ? (({ answeredBy, ...safeResult }) => safeResult)(g.reveal) : null } : null,
       updatedAt: s.updatedAt };
   }
   webSocketMessage(ws, message) {
