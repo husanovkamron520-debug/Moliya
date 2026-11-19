@@ -1,0 +1,16 @@
+name = "moliya-quiz-racer"
+main = "src/index.js"
+compatibility_date = "2026-11-19"
+
+[[durable_objects.bindings]]
+name = "ROOMS"
+class_name = "MultiplayerRoom"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["MultiplayerRoom"]
+
+[assets]
+directory = "./"
+binding = "ASSETS"
+run_worker_first = true
