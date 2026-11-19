@@ -35,7 +35,7 @@ export default {
         body: JSON.stringify({ code: roomCode, name }) });
       return res;
     }
-    const match = url.pathname.match(/^\/api\/rooms\/([A-Z0-9]{6})\/(join|state|start|answer)$/);
+    const match = url.pathname.match(/^\/api\/rooms\/([A-Z0-9]{6})\/(join|state|start|answer|ws)$/);
     if (!match) return fail("API endpoint topilmadi.", 404);
     const [, roomCode, action] = match;
     const stub = env.ROOMS.get(env.ROOMS.idFromName(roomCode));
@@ -81,6 +81,14 @@ export class MultiplayerRoom {
     const player = this.state.players.find(p => p.id === auth);
     if (!player) return fail("Ruxsat yo‘q. Xonaga qayta kiring.", 401);
     if (url.pathname === "/state" && request.method === "GET") return json(this.publicState(player.id));
+    if (url.pathname === "/ws" && request.headers.get("Upgrade") === "websocket") {
+      const pair = new WebSocketPair();
+      const client = pair[0], server = pair[1];
+      this.ctx.acceptWebSocket(server);
+      server.serializeAttachment({ token: player.id });
+      server.send(JSON.stringify({ type: "state", state: this.publicState(player.id) }));
+      return new Response(null, { status: 101, webSocket: client });
+    }
     if (url.pathname === "/start" && request.method === "POST") {
       if (player.id !== this.state.hostId) return fail("Faqat xona egasi boshlashi mumkin.", 403);
       if (this.state.status !== "waiting") return fail("O‘yin allaqachon boshlangan.", 409);
