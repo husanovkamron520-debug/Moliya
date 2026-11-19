@@ -120,7 +120,9 @@ export class MultiplayerRoom {
           streak: 0, idx: i, lv: { tires: 0, engine: 0, turbo: 0, aero: 0, weight: 0 },
           p50: 2, pT: 3
         })), reveal: null };
-      this.state.status = "playing"; await this.save(); await this.broadcast();
+      this.state.status = "playing"; await this.save();
+      await this.ctx.storage.setAlarm(Date.now() + this.state.game.tsec * 1000);
+      await this.broadcast();
       return json(this.publicState(player.id));
     }
     if (url.pathname === "/answer" && request.method === "POST") {
@@ -142,10 +144,36 @@ export class MultiplayerRoom {
         explanation: String(q.e || ""), answeredBy: player.id };
       g.qi++; g.questionStartedAt = Date.now();
       if (g.qi >= g.seq.length) this.state.status = "finished";
-      await this.save(); await this.broadcast();
+      await this.save();
+      if (this.state.status === "playing") await this.ctx.storage.setAlarm(Date.now() + g.tsec * 1000);
+      else await this.ctx.storage.deleteAlarm();
+      await this.broadcast();
       return json(this.publicState(player.id));
     }
     return fail("Method yoki endpoint noto‘g‘ri.", 404);
+  }
+  async alarm() {
+    await this.ready;
+    if (!this.state || this.state.status !== "playing" || !this.state.game) return;
+    const g = this.state.game;
+    const dueAt = g.questionStartedAt + g.tsec * 1000;
+    if (Date.now() < dueAt) {
+      await this.ctx.storage.setAlarm(dueAt);
+      return;
+    }
+    const q = g.seq[g.qi];
+    const team = g.teams[g.qi % 3];
+    team.answered++;
+    team.streak = 0;
+    g.reveal = { questionIndex: g.qi, choice: -1, correct: q.correct, ok: false,
+      points: 0, explanation: String(q.e || ""), answeredBy: null };
+    g.qi++;
+    g.questionStartedAt = Date.now();
+    if (g.qi >= g.seq.length) this.state.status = "finished";
+    await this.save();
+    if (this.state.status === "playing") await this.ctx.storage.setAlarm(Date.now() + g.tsec * 1000);
+    else await this.ctx.storage.deleteAlarm();
+    await this.broadcast();
   }
   async save() { this.state.updatedAt = Date.now(); await this.ctx.storage.put("room", this.state); }
   publicState(viewerId) {
