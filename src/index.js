@@ -136,7 +136,7 @@ export class MultiplayerRoom {
       const q = g.seq[g.qi], choice = Number(b.choice);
       if (!Number.isInteger(choice) || choice < -1 || choice > 3) return fail("Javob varianti noto‘g‘ri.");
       const elapsed = Math.max(0, (Date.now() - g.questionStartedAt) / 1000);
-      if (choice >= 0 && elapsed > g.tsec + 1) return fail("Vaqt tugagan.", 409);
+      if (choice >= 0 && elapsed > g.tsec) return fail("Vaqt tugagan.", 409);
       const ok = choice >= 0 && choice === q.correct;
       const points = ok ? 1000 + Math.ceil(g.tsec - Math.min(g.tsec, elapsed)) * 50 : 0;
       team.answered++; if (ok) { team.correct++; team.bounty += points; team.streak++; } else team.streak = 0;
