@@ -11,7 +11,7 @@ const json = (data, status = 200) => new Response(JSON.stringify(data), {
     "access-control-allow-methods": "GET,POST,OPTIONS" }
 });
 const fail = (message, status = 400) => json({ error: message }, status);
-const code = () => Array.from(crypto.getRandomValues(new Uint8Array(4)))
+const code = () => Array.from(crypto.getRandomValues(new Uint8Array(6)))
   .map(x => "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[x % 32]).join("");
 const token = () => Array.from(crypto.getRandomValues(new Uint8Array(24)))
   .map(x => x.toString(16).padStart(2, "0")).join("");
@@ -33,9 +33,9 @@ export default {
       const res = await stub.fetch("https://room.internal/init", { method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ code: roomCode, name }) });
-      return new Response(await res.text(), { status: res.status, headers: { "content-type": "application/json" } });
+      return res;
     }
-    const match = url.pathname.match(/^\/api\/rooms\/([A-Z0-9]{4})\/(join|state|start|answer)$/);
+    const match = url.pathname.match(/^\/api\/rooms\/([A-Z0-9]{6})\/(join|state|start|answer)$/);
     if (!match) return fail("API endpoint topilmadi.", 404);
     const [, roomCode, action] = match;
     const stub = env.ROOMS.get(env.ROOMS.idFromName(roomCode));
