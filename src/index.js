@@ -90,7 +90,7 @@ export class MultiplayerRoom {
       if (!Array.isArray(seq) || seq.length < 12 || seq.length > 90 || seq.length % 3 !== 0 ||
           seq.some(q => !q || typeof q.q !== "string" || !Array.isArray(q.opts) ||
             q.opts.length !== 4 || !Number.isInteger(q.correct) || q.correct < 0 || q.correct > 3))
-        return fail("Savollar paketi noto‘g‘ri (12–90 ta savol, 4 variant).");
+        return fail("Savollar paketi noto‘g‘ri (12–90 ta, 3 ga bo‘linadigan savol; har birida 4 variant).");
       const per = Math.floor(seq.length / 3);
       this.state.game = { per, tsec: Math.max(10, Math.min(90, Number(b.tsec) || 30)),
         seq, qi: 0, questionStartedAt: Date.now(), teams: this.state.players.map((p, i) => ({
@@ -110,10 +110,11 @@ export class MultiplayerRoom {
       if (team.playerId !== player.id) return fail("Hozir sizning navbatingiz emas.", 403);
       if (g.reveal && g.reveal.questionIndex === g.qi) return fail("Javob qabul qilingan.", 409);
       const q = g.seq[g.qi], choice = Number(b.choice);
-      if (!Number.isInteger(choice) || choice < 0 || choice > 3) return fail("Javob varianti noto‘g‘ri.");
-      const ok = choice === q.correct;
-      const elapsed = Math.max(0, Math.min(g.tsec, Number(b.elapsed) || 0));
-      const points = ok ? 1000 + Math.ceil(g.tsec - elapsed) * 50 : 0;
+      if (!Number.isInteger(choice) || choice < -1 || choice > 3) return fail("Javob varianti noto‘g‘ri.");
+      const elapsed = Math.max(0, (Date.now() - g.questionStartedAt) / 1000);
+      if (choice >= 0 && elapsed > g.tsec + 1) return fail("Vaqt tugagan.", 409);
+      const ok = choice >= 0 && choice === q.correct;
+      const points = ok ? 1000 + Math.ceil(g.tsec - Math.min(g.tsec, elapsed)) * 50 : 0;
       team.answered++; if (ok) { team.correct++; team.bounty += points; team.streak++; } else team.streak = 0;
       g.reveal = { questionIndex: g.qi, choice, correct: q.correct, ok, points,
         explanation: String(q.e || ""), answeredBy: player.id };
