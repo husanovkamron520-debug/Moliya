@@ -9,7 +9,7 @@ This branch keeps the original 3D solo game and adds a separate three-player onl
 - `/online.html` provides create-room / join-room / lobby / synchronized quiz screens.
 - Rooms support exactly three players; the host starts the match.
 - The host's built-in or saved question pack is exported from the original game page to browser local storage and read by the online page.
-- The server enforces turn order, answer deadline, scoring, and hides correct answers until the question is answered.
+- The server enforces turn order, answer deadline, scoring, and hides correct answers until the question is answered. Durable Object alarms automatically time out unanswered turns even if the active player disconnects.
 - WebSockets broadcast room and score updates; the state endpoint is available as fallback.
 
 ## Deploy
