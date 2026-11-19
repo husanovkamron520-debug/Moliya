@@ -130,7 +130,7 @@ export class MultiplayerRoom {
     let current = null;
     if (g && s.status === "playing" && g.qi < g.seq.length) {
       const q = g.seq[g.qi]; current = { questionIndex: g.qi, q: q.q, opts: q.opts,
-        difficulty: q.d, activePlayerId: g.teams[g.qi % 3].playerId,
+        difficulty: q.d, activePlayerId: g.teams[g.qi % 3].playerPublicId,
         activePlayerName: g.teams[g.qi % 3].name };
     }
     return { code: s.code, status: s.status, players: s.players.map(({ id, name, role }) => ({ id, name, role })),
