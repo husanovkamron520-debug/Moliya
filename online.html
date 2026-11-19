@@ -7,7 +7,7 @@
 <section id="setup">
 <h1>Bilim poygasi<br><span style="color:var(--gold)">Online xona</span></h1><p class="muted">Uchta telefon. Bitta xona. Savollar va natijalar barcha qurilmalarda sinxronlanadi.</p>
 <div class="panel"><div class="grid"><div class="field"><label>ISМINGIZ</label><input id="name" maxlength="24" placeholder="Masalan: Kamron"></div><div class="field"><label>CLOUDFLARE WORKER URL</label><input id="api" placeholder="https://your-worker.workers.dev"></div></div>
-<div class="actions"><button class="btn" id="create">Xona yaratish</button><button class="btn secondary" id="joinToggle">Kod bilan kirish</button></div>
+<div class="actions"><button class="btn" id="create">Xona yaratish</button><button class="btn secondary" id="joinToggle">Kod bilan kirish</button><button class="btn secondary" id="packToggle">Savol JSON kiritish</button></div>
 <div id="joinBox" class="hidden"><div class="field"><label>6 XONALI XONA KODI</label><input id="code" maxlength="6" placeholder="ABC234" autocapitalize="characters"></div><button class="btn secondary" id="join">Xonaga qo‘shilish</button></div><div id="status" class="status">Avval Worker manzilini kiriting. Barcha o‘yinchilar bir xil Worker URL ishlatadi.</div></div>
 <div id="packPanel" class="panel hidden"><h2>Savollar paketi</h2><p class="muted">Boshlovchi qurilmada mavjud saqlangan paket avtomatik olinadi. Bo‘lmasa, savollar JSON paketini joylang. Kamida 12 ta savol kerak.</p><div class="field"><label>JSON (subject, topic, short, questions[])</label><textarea id="pack" placeholder='{"subject":"Moliya","topic":"Asoslar","questions":[{"q":"...","a":["to‘g‘ri","xato 1","xato 2","xato 3"],"e":"Izoh","d":2}]}'></textarea></div></div>
 </section>
@@ -21,7 +21,7 @@
 </main>
 <script>
 (()=>{
-const $=id=>document.getElementById(id);let api='',room='',token='',host=false,ws=null,state=null,playerId='',lastQi=-1,timerId=null,deadline=0,pack=null;
+const $=id=>document.getElementById(id);let api='',room='',token='',host=false,ws=null,state=null,playerId='',lastQi=-1,timerId=null,deadline=0,pack=null,timeoutQi=-1;
 const say=t=>{$('status').textContent=t};const show=id=>$(id).classList.remove('hidden');const hide=id=>$(id).classList.add('hidden');
 $('api').value=localStorage.getItem('mqr.api')||'';$('name').value=localStorage.getItem('mqr.name')||'';
 function endpoint(path){return api.replace(/\/$/,'')+path}
@@ -29,7 +29,7 @@ async function call(path,body){const r=await fetch(endpoint(path),{method:body?'
 function setup(){api=$('api').value.trim();if(!/^https:\/\//.test(api))throw Error('Worker URL https:// bilan boshlanishi kerak.');const name=$('name').value.trim();if(!name)throw Error('Ismingizni kiriting.');localStorage.setItem('mqr.api',api);localStorage.setItem('mqr.name',name);return name}
 function storedPack(){try{const p=JSON.parse(localStorage.getItem('mwq.pack')||'null');if(p&&Array.isArray(p.questions)&&p.questions.length>=12)return p}catch{}return null}
 function getPack(){let p=storedPack();if(!p){const raw=$('pack').value.trim();if(!raw)throw Error('Savollar paketi topilmadi. JSON paketni joylang.');p=JSON.parse(raw)}if(!Array.isArray(p.questions)||p.questions.length<12)throw Error('Kamida 12 ta savol kerak.');return p}
-function makeSequence(p){const src=p.questions.slice(0,Math.floor(p.questions.length/3)*3);const seq=[];for(let r=0;r<src.length/3;r++){const row=src.slice(r*3,r*3+3).sort(()=>Math.random()-.5);seq.push(...row)}return seq.map(q=>{const answers=Array.isArray(q.a)?q.a:q.opts;if(!q.q||!Array.isArray(answers)||answers.length!==4)throw Error('Har savolda q va aynan 4 ta a javobi bo‘lishi kerak.');const opts=answers.map((v,i)=>({v,i})).sort(()=>Math.random()-.5);return{q:q.q,opts:opts.map(x=>x.v),correct:opts.findIndex(x=>x.i===0),e:q.e||'',d:q.d||2}})}
+function makeSequence(p){const src=p.questions.slice(0,Math.min(90,Math.floor(p.questions.length/3)*3));const seq=[];for(let r=0;r<src.length/3;r++){const row=src.slice(r*3,r*3+3).sort(()=>Math.random()-.5);seq.push(...row)}return seq.map(q=>{const answers=Array.isArray(q.a)?q.a:q.opts;if(!q.q||!Array.isArray(answers)||answers.length!==4)throw Error('Har savolda q va aynan 4 ta a javobi bo‘lishi kerak.');const opts=answers.map((v,i)=>({v,i})).sort(()=>Math.random()-.5);return{q:q.q,opts:opts.map(x=>x.v),correct:opts.findIndex(x=>x.i===0),e:q.e||'',d:q.d||2}})}
 async function create(){try{const name=setup();pack=getPack();const d=await call('/api/rooms',{name});room=d.code;token=d.token;host=true;playerId=d.player.publicId;enterLobby(d.state);connect();}catch(e){say(e.message)}}
 async function join(){try{const name=setup();room=$('code').value.trim().toUpperCase();if(!/^[A-Z0-9]{6}$/.test(room))throw Error('Xona kodi 6 ta belgidan iborat.');const d=await call('/api/rooms/'+room+'/join',{name});token=d.token;host=false;playerId=d.player.publicId;enterLobby(d.state);connect();}catch(e){say(e.message)}}
 function enterLobby(s){state=s;$('roomCode').textContent=room;hide('setup');show('lobby');render(s)}
@@ -41,9 +41,9 @@ function renderGame(s){const g=s.game;if(!g)return;$('qCount').textContent=Math.
 if(g.lastResult&&g.lastResult.questionIndex===lastQi&&g.qi!==lastQi+1){} 
 if(g.qi!==lastQi){lastQi=g.qi;deadline=Date.now()+g.tsec*1000;clearInterval(timerId);timerId=setInterval(tick,200);$('result').classList.add('hidden')}
 $('question').textContent=q.q;$('turn').textContent=q.activePlayerName;$('answers').innerHTML=q.opts.map((o,i)=>'<button class="answer" data-i="'+i+'"><b>'+'ABCD'[i]+'</b><span>'+esc(o)+'</span></button>').join('');const myTurn=q.activePlayerId===playerId;$('gameNotice').textContent=myTurn?'Sizning navbatingiz — javobni tanlang.':q.activePlayerName+' javob bermoqda…';[...$('answers').children].forEach(b=>{b.disabled=!myTurn;b.onclick=()=>answer(+b.dataset.i)});if(g.lastResult&&g.lastResult.questionIndex===g.qi-1)showResult(g.lastResult)}
-function tick(){const left=Math.max(0,(deadline-Date.now())/1000);$('timer').textContent=Math.ceil(left);$('timebar').style.width=(left/(state.game?.tsec||30)*100)+'%'}
+function tick(){const left=Math.max(0,(deadline-Date.now())/1000);$('timer').textContent=Math.ceil(left);$('timebar').style.width=(left/(state.game?.tsec||30)*100)+'%';const g=state?.game;if(left<=0&&g?.current?.activePlayerId===playerId&&timeoutQi!==g.qi){timeoutQi=g.qi;answer(-1)}}
 async function answer(choice){const g=state?.game;if(!g||!g.current||g.current.activePlayerId!==playerId)return;[...$('answers').children].forEach(b=>b.disabled=true);try{await call('/api/rooms/'+room+'/answer',{token,questionIndex:g.qi,choice})}catch(e){$('gameNotice').textContent=e.message}}
 function showResult(r){$('result').classList.remove('hidden');$('result').innerHTML='<b>'+(r.ok?'To‘g‘ri javob!':'Noto‘g‘ri javob')+'</b> · '+(r.ok?'+'+Number(r.points).toLocaleString()+' bounty':'To‘g‘ri variant: '+'ABCD'[r.correct])+(r.explanation?'<p>'+esc(r.explanation)+'</p>':'')}
-$('create').onclick=create;$('join').onclick=join;$('start').onclick=start;$('joinToggle').onclick=()=>show('joinBox');$('copyCode').onclick=()=>navigator.clipboard?.writeText(room);$('api').onchange=()=>localStorage.setItem('mqr.api',$('api').value.trim());
+$('create').onclick=create;$('join').onclick=join;$('start').onclick=start;$('joinToggle').onclick=()=>show('joinBox');$('packToggle').onclick=()=>show('packPanel');$('copyCode').onclick=()=>navigator.clipboard?.writeText(room);$('api').onchange=()=>localStorage.setItem('mqr.api',$('api').value.trim());
 })();
 </script></body></html>
