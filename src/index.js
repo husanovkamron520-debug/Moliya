@@ -22,6 +22,7 @@ export default {
       "access-control-allow-origin": "*", "access-control-allow-headers": "content-type",
       "access-control-allow-methods": "GET,POST,OPTIONS" } });
     const url = new URL(request.url);
+    if (url.pathname === "/") return Response.redirect(new URL("/Most%20Wanted%20Quiz%20Racer.html", url), 302);
     if (url.pathname === "/api/health") return json({ ok: true, service: "moliya-quiz-racer" });
     if (url.pathname === "/api/rooms" && request.method === "POST") {
       const body = await request.json().catch(() => ({}));
@@ -36,7 +37,7 @@ export default {
       return res;
     }
     const match = url.pathname.match(/^\/api\/rooms\/([A-Z0-9]{6})\/(join|state|start|answer|ws)$/);
-    if (!match) return fail("API endpoint topilmadi.", 404);
+    if (!match) return env.ASSETS ? env.ASSETS.fetch(request) : fail("API endpoint topilmadi.", 404);
     const [, roomCode, action] = match;
     const stub = env.ROOMS.get(env.ROOMS.idFromName(roomCode));
     return stub.fetch(new Request("https://room.internal/" + action + url.search, request));
