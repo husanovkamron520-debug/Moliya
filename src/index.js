@@ -37,7 +37,20 @@ export default {
       return res;
     }
     const match = url.pathname.match(/^\/api\/rooms\/([A-Z0-9]{6})\/(join|state|start|answer|ws)$/);
-    if (!match) return env.ASSETS ? env.ASSETS.fetch(request) : fail("API endpoint topilmadi.", 404);
+    if (!match) {
+      if (!env.ASSETS) return fail("API endpoint topilmadi.", 404);
+      const asset = await env.ASSETS.fetch(request);
+      if (asset.ok && decodeURIComponent(url.pathname).includes("Most Wanted Quiz Racer.html")) {
+        return new HTMLRewriter()
+          .on("#scrTitle .title-wrap", { element(el) {
+            el.append('<div style="margin-top:18px;text-align:center"><a href="/online.html" style="display:inline-block;padding:13px 22px;border-radius:10px;background:#ffc21a;color:#171914;font-weight:900;text-decoration:none">ONLINE XONA ↗</a></div>', { html: true });
+          } })
+          .on("body", { element(el) {
+            el.append('<script>try{if(window.__mwq&&window.__mwq.PACK){localStorage.setItem("mwq.onlinePack",JSON.stringify(window.__mwq.PACK()))}}catch(e){}</script>', { html: true });
+          } }).transform(asset);
+      }
+      return asset;
+    }
     const [, roomCode, action] = match;
     const stub = env.ROOMS.get(env.ROOMS.idFromName(roomCode));
     return stub.fetch(new Request("https://room.internal/" + action + url.search, request));
