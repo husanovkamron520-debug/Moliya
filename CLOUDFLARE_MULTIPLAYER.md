@@ -14,13 +14,30 @@ This branch keeps the original 3D solo game and adds a separate three-player onl
 
 ## Deploy
 
-1. Install Wrangler: `npm i -D wrangler`
-2. Authenticate with Cloudflare: `npx wrangler login`
-3. From the repository root run: `npx wrangler deploy`
-4. Check `https://YOUR-WORKER.YOUR-SUBDOMAIN.workers.dev/api/health`
-5. Open the Worker root URL. It redirects to the original solo game.
-6. On the solo page, tap **ONLINE XONA**. The built-in quiz pack is saved automatically for the host browser.
-7. Enter the same Worker URL on all three devices. One creates the room; the other two join using the six-character code.
+### Cloudflare Workers Builds settings
+
+This repository must be deployed from the `cloudflare-multiplayer-foundation` branch. The `main` branch does not contain the Worker configuration, so deploying `main` can trigger Wrangler's static-output auto-detection and fail with “Could not detect a directory containing static files”.
+
+In the Cloudflare Worker project, open **Settings → Build** and set:
+
+- Git repository: `husanovkamron520-debug/Moliya`
+- Git branch / Production branch: `cloudflare-multiplayer-foundation`
+- Root directory: leave blank (repository root; do not enter `/`)
+- Build command: leave blank
+- Deploy command: `npx wrangler deploy`
+
+The Worker name in the dashboard must be `moliya-quiz-racer`, matching `wrangler.toml`.
+
+After saving, trigger a new deployment from that branch. The build log must identify `cloudflare-multiplayer-foundation`, not `main`.
+
+### Local deploy alternative
+
+1. Check out `cloudflare-multiplayer-foundation`.
+2. From the repository root run `npx wrangler deploy` (after authenticating with `npx wrangler login`).
+3. Check `https://YOUR-WORKER.YOUR-SUBDOMAIN.workers.dev/api/health`.
+4. Open the Worker root URL. It redirects to the original solo game.
+5. On the solo page, tap **ONLINE XONA**. The built-in quiz pack is saved automatically for the host browser.
+6. Enter the same Worker URL on all three devices. One creates the room; the other two join using the six-character code.
 
 ## Online game flow
 
