@@ -9,3 +9,8 @@ class_name = "MultiplayerRoom"
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["MultiplayerRoom"]
+
+[assets]
+directory = "./"
+binding = "ASSETS"
+run_worker_first = true
