@@ -87,13 +87,13 @@ export class MultiplayerRoom {
       if (this.state.players.length !== 3) return fail("Boshlash uchun 3 o‘yinchi kerak.", 409);
       const b = await request.json();
       const seq = b.seq;
-      if (!Array.isArray(seq) || seq.length < 12 || seq.length > 90 ||
+      if (!Array.isArray(seq) || seq.length < 12 || seq.length > 90 || seq.length % 3 !== 0 ||
           seq.some(q => !q || typeof q.q !== "string" || !Array.isArray(q.opts) ||
             q.opts.length !== 4 || !Number.isInteger(q.correct) || q.correct < 0 || q.correct > 3))
         return fail("Savollar paketi noto‘g‘ri (12–90 ta savol, 4 variant).");
       const per = Math.floor(seq.length / 3);
       this.state.game = { per, tsec: Math.max(10, Math.min(90, Number(b.tsec) || 30)),
-        seq, qi: 0, teams: this.state.players.map((p, i) => ({
+        seq, qi: 0, questionStartedAt: Date.now(), teams: this.state.players.map((p, i) => ({
           playerId: p.id, playerPublicId: p.publicId, name: p.name, bounty: 0, correct: 0, answered: 0,
           streak: 0, idx: i, lv: { tires: 0, engine: 0, turbo: 0, aero: 0, weight: 0 },
           p50: 2, pT: 3
