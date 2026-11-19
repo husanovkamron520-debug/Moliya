@@ -118,7 +118,7 @@ export class MultiplayerRoom {
       team.answered++; if (ok) { team.correct++; team.bounty += points; team.streak++; } else team.streak = 0;
       g.reveal = { questionIndex: g.qi, choice, correct: q.correct, ok, points,
         explanation: String(q.e || ""), answeredBy: player.id };
-      g.qi++;
+      g.qi++; g.questionStartedAt = Date.now();
       if (g.qi >= g.seq.length) this.state.status = "finished";
       await this.save(); await this.broadcast();
       return json(this.publicState(player.id));
