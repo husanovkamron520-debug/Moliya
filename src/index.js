@@ -133,8 +133,8 @@ export class MultiplayerRoom {
         difficulty: q.d, activePlayerId: g.teams[g.qi % 3].playerPublicId,
         activePlayerName: g.teams[g.qi % 3].name };
     }
-    return { code: s.code, status: s.status, players: s.players.map(({ id, name, role }) => ({ id, name, role })),
-      isHost: viewerId === s.hostId, viewerId,
+    return { code: s.code, status: s.status, players: s.players.map(({ publicId, name, role }) => ({ id: publicId, name, role })),
+      isHost: viewerId === s.hostId,
       game: g ? { per: g.per, tsec: g.tsec, qi: g.qi, total: g.seq.length,
         teams: g.teams.map(({ playerId, ...team }) => team), current, lastResult: g.reveal } : null,
       updatedAt: s.updatedAt };
