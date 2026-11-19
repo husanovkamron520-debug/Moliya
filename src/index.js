@@ -44,8 +44,16 @@ export default {
 };
 
 export class MultiplayerRoom {
-  constructor(ctx) { this.ctx = ctx; this.state = null; }
+  constructor(ctx) {
+    this.ctx = ctx;
+    this.state = null;
+    // Durable Object instances can be recreated after hibernation/restart.
+    this.ready = ctx.blockConcurrencyWhile(async () => {
+      this.state = await ctx.storage.get("room") || null;
+    });
+  }
   async fetch(request) {
+    await this.ready;
     const url = new URL(request.url);
     if (url.pathname === "/init" && request.method === "POST") {
       if (this.state) return fail("Xona allaqachon mavjud.", 409);
