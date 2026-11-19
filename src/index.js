@@ -62,7 +62,7 @@ export class MultiplayerRoom {
       this.state = { code: b.code, status: "waiting", hostId: host.id,
         players: [host], game: null, updatedAt: Date.now() };
       await this.save();
-      return json({ code: b.code, token: host.id, player: host, state: this.publicState() });
+      return json({ code: b.code, token: host.id, player: host, state: this.publicState(host.id) });
     }
     if (!this.state) return fail("Xona topilmadi yoki muddati tugagan.", 404);
     if (url.pathname === "/join" && request.method === "POST") {
