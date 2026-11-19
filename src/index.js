@@ -58,7 +58,7 @@ export class MultiplayerRoom {
     if (url.pathname === "/init" && request.method === "POST") {
       if (this.state) return fail("Xona allaqachon mavjud.", 409);
       const b = await request.json();
-      const host = { id: token(), name: b.name, role: "host", joinedAt: Date.now() };
+      const host = { id: token(), publicId: crypto.randomUUID(), name: b.name, role: "host", joinedAt: Date.now() };
       this.state = { code: b.code, status: "waiting", hostId: host.id,
         players: [host], game: null, updatedAt: Date.now() };
       await this.save();
@@ -73,7 +73,7 @@ export class MultiplayerRoom {
       if (this.state.players.length >= 3) return fail("Xona to‘la (3/3).", 409);
       if (this.state.players.some(p => p.name.toLowerCase() === name.toLowerCase()))
         return fail("Bu ism xonada band.", 409);
-      const player = { id: token(), name, role: "player", joinedAt: Date.now() };
+      const player = { id: token(), publicId: crypto.randomUUID(), name, role: "player", joinedAt: Date.now() };
       this.state.players.push(player); await this.save(); await this.broadcast();
       return json({ code: this.state.code, token: player.id, player, state: this.publicState() });
     }
@@ -94,7 +94,7 @@ export class MultiplayerRoom {
       const per = Math.floor(seq.length / 3);
       this.state.game = { per, tsec: Math.max(10, Math.min(90, Number(b.tsec) || 30)),
         seq, qi: 0, teams: this.state.players.map((p, i) => ({
-          playerId: p.id, name: p.name, bounty: 0, correct: 0, answered: 0,
+          playerId: p.id, playerPublicId: p.publicId, name: p.name, bounty: 0, correct: 0, answered: 0,
           streak: 0, idx: i, lv: { tires: 0, engine: 0, turbo: 0, aero: 0, weight: 0 },
           p50: 2, pT: 3
         })), reveal: null };
@@ -136,7 +136,8 @@ export class MultiplayerRoom {
     return { code: s.code, status: s.status, players: s.players.map(({ id, name, role }) => ({ id, name, role })),
       isHost: viewerId === s.hostId, viewerId,
       game: g ? { per: g.per, tsec: g.tsec, qi: g.qi, total: g.seq.length,
-        teams: g.teams, current, lastResult: g.reveal } : null, updatedAt: s.updatedAt };
+        teams: g.teams.map(({ playerId, ...team }) => team), current, lastResult: g.reveal } : null,
+      updatedAt: s.updatedAt };
   }
   async broadcast() {
     const sockets = this.ctx.getWebSockets();
