@@ -148,9 +148,17 @@ export class MultiplayerRoom {
         teams: g.teams.map(({ playerId, ...team }) => team), current, lastResult: g.reveal } : null,
       updatedAt: s.updatedAt };
   }
+  webSocketMessage(ws, message) {
+    if (message === "ping") { try { ws.send("pong"); } catch {} }
+  }
+  webSocketClose() {}
+  webSocketError() {}
   async broadcast() {
-    const sockets = this.ctx.getWebSockets();
-    const payload = JSON.stringify({ type: "state", state: this.publicState() });
-    for (const ws of sockets) { try { ws.send(payload); } catch {} }
+    for (const ws of this.ctx.getWebSockets()) {
+      try {
+        const attachment = ws.deserializeAttachment() || {};
+        ws.send(JSON.stringify({ type: "state", state: this.publicState(attachment.token) }));
+      } catch {}
+    }
   }
 }
